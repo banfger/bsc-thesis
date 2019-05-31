@@ -40,11 +40,17 @@ Check swap memory with this command:
 Install Docker 18.06.3 on all of the nodes:
 
 &nbsp;&nbsp;&nbsp;`sudo apt-get update`  
+
 &nbsp;&nbsp;&nbsp;`sudo apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common`  
+
 &nbsp;&nbsp;&nbsp;`curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -`  
+
 &nbsp;&nbsp;&nbsp;`sudo apt-key fingerprint 0EBFCD88`  
+
 &nbsp;&nbsp;&nbsp;`sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"`  
+
 &nbsp;&nbsp;&nbsp;`sudo apt-get update`  
+
 &nbsp;&nbsp;&nbsp;`sudo apt-get install docker-ce=18.06.3~ce~3-0~ubuntu containerd.io`  
 
 Change the cgroupdriver to systemd:
@@ -62,6 +68,7 @@ Change the cgroupdriver to systemd:
 &nbsp;&nbsp;&nbsp;`sudo mkdir -p /etc/systemd/system/docker.service.d`  
 
 &nbsp;&nbsp;&nbsp;`sudo systemctl daemon-reload`  
+
 &nbsp;&nbsp;&nbsp;`sudo systemctl restart docker`  
 
 Check that Docker is working properly:
@@ -70,7 +77,7 @@ Check that Docker is working properly:
 
 Install Kubernetes an all of the nodes:
 
-`curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - && echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list && sudo apt-get update -q && sudo apt-get install -qy kubelet=1.14.0-00 kubectl=1.14.0-00 kubeadm=1.14.0-00`  
+`curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - && echo "deb http://apt.kubernetes.io/kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list && sudo apt-get update -q && sudo apt-get install -qy kubelet=1.14.0-00 kubectl=1.14.0-00 kubeadm=1.14.0-00`  
 
 &nbsp;&nbsp;&nbsp;`sudo sysctl net.bridge.bridge-nf-call-iptables=1`  
 
@@ -91,27 +98,36 @@ Install glsuterfs_client on all workers:
 These steps must be made on the master node:  
 
 &nbsp;&nbsp;&nbsp;`git clone https://github.com/heketi/heketi`  
+
 &nbsp;&nbsp;&nbsp;`cd heketi/extras/kubernetes`  
-&nbsp;&nbsp;&nbsp;`kubectl create -f glusterfs-daemonset.json` (gluster/gluster-centos:gluster4u0_centos7, with latest the pods fail to work again after node reboots.)  
-  
+
+&nbsp;&nbsp;&nbsp;`kubectl create -f glusterfs-daemonset.json` (gluster/gluster-centos:gluster4u0_centos7, with latest the pods fail to work again after node reboots.)
+
 &nbsp;&nbsp;&nbsp;`kubectl label node worker1 storagenode=glusterfs`  
 &nbsp;&nbsp;&nbsp;`kubectl label node worker2 storagenode=glusterfs`  
 &nbsp;&nbsp;&nbsp;`kubectl label node worker3 storagenode=glusterfs`  
 
 &nbsp;&nbsp;&nbsp;`kubectl create -f heketi-service-account.json`  
+
 &nbsp;&nbsp;&nbsp;`kubectl create clusterrolebinding heketi-gluster-admin --clusterrole=edit --serviceaccount=default:heketi-service-account`  
+
 &nbsp;&nbsp;&nbsp;`kubectl create secret generic heketi-config-secret --from-file=./heketi.json`  
+
 &nbsp;&nbsp;&nbsp;`kubectl create -f heketi-bootstrap.json`  
+
 &nbsp;&nbsp;&nbsp;`wget https://github.com/heketi/heketi/releases/download/v9.0.0/heketi-client-v9.0.0.linux.amd64.tar.gz`  
+
 &nbsp;&nbsp;&nbsp;`tar -xzvf ./heketi-client-v9.0.0.linux.amd64.tar.gz`  
+
 &nbsp;&nbsp;&nbsp;`sudo cp ./heketi-client/bin/heketi-cli /usr/local/bin/`  
+
 &nbsp;&nbsp;&nbsp;`heketi-cli -v`  
+
 &nbsp;&nbsp;&nbsp;`export HEKETI_CLI_SERVER=http://`kubectl describe pod deploy-heketi-???? | grep IP | sed -E 's/IP:[[:space:]]+//'`:8080`  
 
 Create the topology.json, which describes where are the storage nodes, which directory or partition should be used on them, what is their name. My example can be seen below:
   
 &nbsp;&nbsp;&nbsp;`nano heketi/extras/kubernetes/topology-sample.json`
-
 {  
 &nbsp;&nbsp;&nbsp;"clusters": [  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{  
@@ -170,14 +186,20 @@ Create the topology.json, which describes where are the storage nodes, which dir
 }  
 
 &nbsp;&nbsp;&nbsp;`heketi-cli topology load --json=topology-sample.json`  
-&nbsp;&nbsp;&nbsp;`heketi-cli setup-openshift-heketi-storage (This command creates heketi-storage.json)`   
-&nbsp;&nbsp;&nbsp;`kubectl create -f heketi-storage.json`  
-&nbsp;&nbsp;&nbsp;`kubectl delete all,service,jobs,deployment,secret --selector="deploy-heketi"`  
-&nbsp;&nbsp;&nbsp;`kubectl create -f heketi-deployment.json`  
-&nbsp;&nbsp;&nbsp;`kubectl get endpoints`  
-&nbsp;&nbsp;&nbsp;`kubectl expose pod heketi-74cc7bb45c-5z46g --name=heketi-svc --port=8080 --type=NodePort`  
-&nbsp;&nbsp;&nbsp;`nano storage-class.yml` (On reboot the resturl ip may change, so we expose it.)  
 
+&nbsp;&nbsp;&nbsp;`heketi-cli setup-openshift-heketi-storage (This command creates heketi-storage.json)`   
+
+&nbsp;&nbsp;&nbsp;`kubectl create -f heketi-storage.json`  
+
+&nbsp;&nbsp;&nbsp;`kubectl delete all,service,jobs,deployment,secret --selector="deploy-heketi"`  
+
+&nbsp;&nbsp;&nbsp;`kubectl create -f heketi-deployment.json`  
+
+&nbsp;&nbsp;&nbsp;`kubectl get endpoints`  
+
+&nbsp;&nbsp;&nbsp;`kubectl expose pod heketi-74cc7bb45c-5z46g --name=heketi-svc --port=8080 --type=NodePort`  
+
+&nbsp;&nbsp;&nbsp;`nano storage-class.yml` (On reboot the resturl ip may change, so we expose it.)  
 &nbsp;&nbsp;&nbsp;apiVersion: storage.k8s.io/v1beta1  
 &nbsp;&nbsp;&nbsp;kind: StorageClass  
 &nbsp;&nbsp;&nbsp;metadata:  
@@ -192,6 +214,7 @@ Create the topology.json, which describes where are the storage nodes, which dir
 If there is a typo in the json, or for some other reason we need to clean up the topology, we can use these commands. The first one prints out the topology info, the second one is deletes a volume. Instead of a volume, we can delete a cluster, a node, and a device too.
 
 &nbsp;&nbsp;&nbsp;`heketi-cli topology info`  
+
 &nbsp;&nbsp;&nbsp;`heketi-cli volume delete <volume_id>`  
   
 ### Kubernetes configuration
@@ -199,9 +222,13 @@ If there is a typo in the json, or for some other reason we need to clean up the
 To create the cluster, I use the kubeadm init command. Where the --apiserver-advertise-address flag is the IP address of the master node, the --pod-network-cidr is the IP address of the chosen network plugin, here Flannel.
 
 &nbsp;&nbsp;&nbsp;`sudo kubeadm init --apiserver-advertise-address=192.168.1.80 --pod-network-cidr=10.244.0.0/16`  
+
 &nbsp;&nbsp;&nbsp;`mkdir -p $HOME/.kube`  
+
 &nbsp;&nbsp;&nbsp;`sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config`  
+
 &nbsp;&nbsp;&nbsp;`sudo chown $(id -u):$(id -g) $HOME/.kube/config`  
+
 &nbsp;&nbsp;&nbsp;`kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/a70459be0084506e4ec919aa1c114638878db11b/Documentation/kube-flannel.yml`  
 
 On the worker nodes use the command from the kubeadm init's output:
@@ -211,12 +238,14 @@ On the worker nodes use the command from the kubeadm init's output:
 To test if everything is working:
 
 &nbsp;&nbsp;&nbsp;`kubectl get nodes`  
+
 &nbsp;&nbsp;&nbsp;`kubectl get pods --all-namespaces`  
 
 If the coredns pods are switching between CrashLoopBackOff and Running stated, then a solution is to disable the dnsmasq feature of the NetworkManager. The loop detector of corends does not like the dnsmasq. 
 Comment out the dns=dnsmasq line and restart the NetworkManager, on all of the nodes.
 
 &nbsp;&nbsp;&nbsp;`sudo nano /etc/NetworkManager/NetworkManager.conf`  
+
 &nbsp;&nbsp;&nbsp;`sudo service network-manager restart`  
 
 Another possible solution is to change the memory limit of the coredns pods, and to change the image version number if it is old, here:
@@ -230,10 +259,15 @@ With Glusterfs the dynamic provisioning is working, so we don't need to make man
 To install Fission I use Helm, which makes it easier, but firstly Helm must be installed:
 
 &nbsp;&nbsp;&nbsp;`curl -LO https://storage.googleapis.com/kubernetes-helm/helm-v2.13.1-linux-amd64.tar.gz`  
+
 &nbsp;&nbsp;&nbsp;`tar xzf helm-v2.13.1-linux-amd64.tar.gz`  
+
 &nbsp;&nbsp;&nbsp;`sudo mv linux-amd64/helm /usr/local/bin`  
+
 &nbsp;&nbsp;&nbsp;`kubectl create serviceaccount --namespace kube-system tiller`  
+
 &nbsp;&nbsp;&nbsp;`kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller`  
+
 &nbsp;&nbsp;&nbsp;`helm init --service-account tiller`  
 
 To use Jaeger tracing system with Fission, an easy way is to edit Fission's values.yaml before Fission installation. Create monitoring namespace for it. The traceCollectorEndpoint’s monitoring is the namespace of the jaeger pod.
@@ -269,6 +303,7 @@ If the admin password is lost, then it can be found here:
 The Grafana pod must be exposed too:
 
 &nbsp;&nbsp;&nbsp;`kubectl expose pod grafana-7dfc7fc75c-dmqbh --name=grafana-svc --port=3000 --type=NodePort --namespace=monitoring`  
+
 &nbsp;&nbsp;&nbsp;`kubectl describe services grafana-svc -n monitoring`
 
 To use the kubernetes app plugin in the web-ui, first a connection to the cluster must be established. By default, check the TLS Client Auth and With CA Cert checkboxes. All the required data can be gathered from the output of kubectl config view –raw command. The URL is the address of the cluster server, CA Cert equals to certificate-authority-data field (this needs to be decoded from base64,  and the other certificates too), Client Cert equals to client-certificate-data, and CLient Key equals to client-key-data field.  
@@ -292,6 +327,7 @@ fission env create --name nodejs --image fission/node-env:1.2.1
 Example for a NodeJS function:
 
 &nbsp;&nbsp;&nbsp;`curl -LO https://raw.githubusercontent.com/fission/fission/master/examples/nodejs/hello.js`  
+
 &nbsp;&nbsp;&nbsp;`fission function create --name hello --env nodejs --code hello.js`  
 
  The function can be tested without a real invocation:
@@ -301,9 +337,11 @@ Example for a NodeJS function:
 With a route we can access the function through HTTP calls:
 
 &nbsp;&nbsp;&nbsp;`fission route create --name hellourl --function hello --url /hello`  
+
 &nbsp;&nbsp;&nbsp;`curl http://${FISSION_ROUTER}/hello`  
 
 The ${FISSION_ROUTER} is an environment variable, which can be exported with the commands below, and it is the IP address of the Fission router.
 
 &nbsp;&nbsp;&nbsp;`kubectl -n fission get svc router`  
+
 &nbsp;&nbsp;&nbsp;`export FISSION_ROUTER=$(kubectl -n fission get svc router -o jsonpath='{...clusterIP}')`  
